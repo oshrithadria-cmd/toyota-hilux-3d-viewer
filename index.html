@@ -128,7 +128,7 @@ body{font-family:'Heebo',sans-serif;background:#0a0a0a;color:#fff}
 <section class="viewer-section" id="viewer">
     <div class="section-header">
         <h2>הדמיה תלת מימדית אינטראקטיבית</h2>
-        <p>גרור ימינה ושמאלה לסיבוב סביב הרכב · גלגלת לזום</p>
+        <p>גרור ימינה ושמאלה לסיבוב סביב הרכב · גלגלת העכבר לזום</p>
     </div>
     <div class="viewer-wrap" id="viewer3d">
         <div class="drag-hint" id="dragHint">← גרור ימינה ושמאלה לסיבוב →</div>
@@ -177,213 +177,380 @@ var container = document.getElementById('viewer3d');
 var W = container.clientWidth;
 var H = container.clientHeight;
 
-document.title = 'DEBUG: W=' + W + ' H=' + H;
-
 var scene = new THREE.Scene();
-scene.background = new THREE.Color(0x111122);
+scene.background = new THREE.Color(0x0c0c1a);
+scene.fog = new THREE.FogExp2(0x0c0c1a, 0.035);
 
-var camera = new THREE.PerspectiveCamera(40, W / H, 0.1, 100);
-camera.position.set(5, 2, 5);
-camera.lookAt(0, 0, 0);
-
-var renderer = new THREE.WebGLRenderer({ antialias: true });
+var camera = new THREE.PerspectiveCamera(38, W / H, 0.1, 100);
+var renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
 renderer.setSize(W, H);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.4;
+renderer.toneMappingExposure = 1.3;
+renderer.outputEncoding = THREE.sRGBEncoding;
 container.insertBefore(renderer.domElement, container.firstChild);
 
-// Lights
-scene.add(new THREE.AmbientLight(0xffffff, 0.8));
-var sun = new THREE.DirectionalLight(0xffffff, 2);
-sun.position.set(5, 10, 5);
+// === PROCEDURAL ENV MAP ===
+var pmrem = new THREE.PMREMGenerator(renderer);
+pmrem.compileEquirectangularShader();
+var envRT = pmrem.fromScene(new THREE.Scene(), 0, 0.1, 100);
+// Build a simple env scene for reflections
+var envScene = new THREE.Scene();
+envScene.background = new THREE.Color(0x111128);
+var envTop = new THREE.Mesh(new THREE.SphereGeometry(20,32,16), new THREE.MeshBasicMaterial({color:0x222244, side:THREE.BackSide}));
+envScene.add(envTop);
+var envL1 = new THREE.Mesh(new THREE.PlaneGeometry(10,10), new THREE.MeshBasicMaterial({color:0x6688cc}));
+envL1.position.set(-8,5,0); envL1.lookAt(0,0,0); envScene.add(envL1);
+var envL2 = new THREE.Mesh(new THREE.PlaneGeometry(8,6), new THREE.MeshBasicMaterial({color:0x8899bb}));
+envL2.position.set(6,4,3); envL2.lookAt(0,0,0); envScene.add(envL2);
+var envL3 = new THREE.Mesh(new THREE.PlaneGeometry(6,4), new THREE.MeshBasicMaterial({color:0x445577}));
+envL3.position.set(0,8,0); envL3.lookAt(0,0,0); envScene.add(envL3);
+var envL4 = new THREE.Mesh(new THREE.PlaneGeometry(5,3), new THREE.MeshBasicMaterial({color:0x334466}));
+envL4.position.set(3,3,-7); envL4.lookAt(0,0,0); envScene.add(envL4);
+envRT = pmrem.fromScene(envScene, 0, 0.1, 100);
+scene.environment = envRT.texture;
+
+// === LIGHTS ===
+var hemi = new THREE.HemisphereLight(0x6688cc, 0x222233, 0.6);
+scene.add(hemi);
+scene.add(new THREE.AmbientLight(0xffffff, 0.3));
+
+var sun = new THREE.DirectionalLight(0xffeedd, 2.5);
+sun.position.set(4, 8, 6);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.camera.left = -6; sun.shadow.camera.right = 6;
+sun.shadow.camera.top = 6; sun.shadow.camera.bottom = -6;
+sun.shadow.camera.near = 0.5; sun.shadow.camera.far = 25;
+sun.shadow.bias = -0.0005;
+sun.shadow.radius = 3;
 scene.add(sun);
 
-// Ground
-var ground = new THREE.Mesh(
-    new THREE.PlaneGeometry(30, 30),
-    new THREE.MeshStandardMaterial({color: 0x1a1a2e, roughness: 0.8})
-);
+var fill = new THREE.DirectionalLight(0x8899cc, 0.8);
+fill.position.set(-5, 4, -4); scene.add(fill);
+
+var rim = new THREE.DirectionalLight(0xaabbff, 0.6);
+rim.position.set(0, 3, -8); scene.add(rim);
+
+var spot = new THREE.SpotLight(0xffffff, 1.2, 15, Math.PI/6, 0.5, 1);
+spot.position.set(0, 7, 0); spot.target.position.set(0,0,0);
+scene.add(spot); scene.add(spot.target);
+
+// === GROUND ===
+var groundMat = new THREE.ShadowMaterial({ opacity: 0.4 });
+var ground = new THREE.Mesh(new THREE.PlaneGeometry(40, 40), groundMat);
 ground.rotation.x = -Math.PI / 2;
 ground.receiveShadow = true;
 scene.add(ground);
 
-// Grid
-var grid = new THREE.GridHelper(30, 30, 0x333366, 0x222244);
-grid.position.y = 0.01;
-scene.add(grid);
-
-// Extra lights
-var fl1 = new THREE.DirectionalLight(0x8888ff, 0.5);
-fl1.position.set(-5, 5, -5); scene.add(fl1);
-var fl2 = new THREE.DirectionalLight(0xffffff, 0.4);
-fl2.position.set(0, 4, -8); scene.add(fl2);
-
-// Materials
-var mBody = new THREE.MeshStandardMaterial({color:0xeeeee8, roughness:0.35, metalness:0.15});
-var mBlack = new THREE.MeshStandardMaterial({color:0x111111, roughness:0.9});
-var mDark = new THREE.MeshStandardMaterial({color:0x222222, roughness:0.5, metalness:0.3});
-var mChrome = new THREE.MeshStandardMaterial({color:0xaaaaaa, roughness:0.1, metalness:0.9});
-var mGlass = new THREE.MeshStandardMaterial({color:0x334455, roughness:0.05, transparent:true, opacity:0.4});
-var mTire = new THREE.MeshStandardMaterial({color:0x0a0a0a, roughness:1.0, metalness:0.0});
-var mWheel = new THREE.MeshStandardMaterial({color:0x1a1a1a, roughness:0.4, metalness:0.6});
+// === MATERIALS ===
+var mBody = new THREE.MeshPhysicalMaterial({
+    color: 0xf0f0ea, roughness: 0.25, metalness: 0.1,
+    clearcoat: 1.0, clearcoatRoughness: 0.05, envMapIntensity: 1.2
+});
+var mBlack = new THREE.MeshStandardMaterial({color:0x111111, roughness:0.85, metalness:0.0});
+var mDark = new THREE.MeshStandardMaterial({color:0x1a1a1a, roughness:0.5, metalness:0.3});
+var mChrome = new THREE.MeshPhysicalMaterial({color:0xcccccc, roughness:0.05, metalness:1.0, envMapIntensity:2.0});
+var mGlass = new THREE.MeshPhysicalMaterial({
+    color:0x223344, roughness:0.0, metalness:0.1,
+    transparent:true, opacity:0.35, envMapIntensity:1.5,
+    clearcoat:0.4, clearcoatRoughness:0.1
+});
+var mTire = new THREE.MeshStandardMaterial({color:0x0a0a0a, roughness:0.95, metalness:0.0});
+var mWheel = new THREE.MeshPhysicalMaterial({color:0x1a1a1a, roughness:0.3, metalness:0.7, envMapIntensity:1.0});
 var mRed = new THREE.MeshStandardMaterial({color:0xdd2222, emissive:0x551111, roughness:0.3});
 var mOrange = new THREE.MeshStandardMaterial({color:0xff6600, emissive:0x442200, roughness:0.4});
-var mWLed = new THREE.MeshStandardMaterial({color:0xffffff, emissive:0x999999, roughness:0.2});
+var mWLed = new THREE.MeshStandardMaterial({color:0xffffff, emissive:0xcccccc, roughness:0.15});
 var mPlate = new THREE.MeshStandardMaterial({color:0xddcc33, roughness:0.6});
+var mRubber = new THREE.MeshStandardMaterial({color:0x1a1a1a, roughness:0.9, metalness:0.0});
+var mRedGlow = new THREE.MeshStandardMaterial({color:0xff1111, emissive:0xaa0000, roughness:0.2, transparent:true, opacity:0.85});
+var mDRL = new THREE.MeshStandardMaterial({color:0xffffff, emissive:0xffffff, roughness:0.1});
 
 // ===== TRUCK =====
 var truck = new THREE.Group();
 
 function add(w,h,d,mat,x,y,z,parent){
     var m = new THREE.Mesh(new THREE.BoxGeometry(w,h,d), mat);
-    m.position.set(x,y,z); m.castShadow=true;
+    m.position.set(x,y,z); m.castShadow=true; m.receiveShadow=true;
+    (parent||truck).add(m);
+    return m;
+}
+function addCyl(rt,rb,h,seg,mat,x,y,z,rx,ry,rz,parent){
+    var m = new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,seg), mat);
+    m.position.set(x,y,z);
+    if(rx) m.rotation.x=rx; if(ry) m.rotation.y=ry; if(rz) m.rotation.z=rz;
+    m.castShadow=true; m.receiveShadow=true;
     (parent||truck).add(m);
     return m;
 }
 
-// Body
+// Main body
 add(1.85,0.42,5.1, mBody, 0,0.5,0);
+// Body lower trim
+add(1.87,0.06,5.12, mRubber, 0,0.28,0);
+
+// Cab
 add(1.7,0.55,1.7, mBody, 0,0.99,0.6);
 add(1.72,0.06,1.72, mBody, 0,1.29,0.6);
+
+// Hood with slight curve
 var hd=add(1.76,0.06,1.5, mBody, 0,0.75,1.85); hd.rotation.x=0.04;
+// Hood crease lines
+add(0.015,0.005,1.2, mDark, -0.35,0.76,1.85);
+add(0.015,0.005,1.2, mDark, 0.35,0.76,1.85);
+
+// Windshield
 var wsh=add(1.58,0.55,0.04, mGlass, 0,0.99,1.33); wsh.rotation.x=-0.3;
+// Rear window
 add(1.45,0.4,0.04, mGlass, 0,0.99,-0.22);
+
+// Side windows + B-pillar
 [-1,1].forEach(function(s){
     add(0.04,0.33,0.7, mGlass, s*0.86,1.0,0.75);
     add(0.04,0.3,0.5, mGlass, s*0.86,1.0,0.25);
     add(0.05,0.42,0.06, mBody, s*0.86,0.98,0.47);
+    // Window trim
+    add(0.01,0.005,0.7, mChrome, s*0.87,1.18,0.75);
+    add(0.01,0.005,0.5, mChrome, s*0.87,1.16,0.25);
+});
+
+// Door lines
+[-1,1].forEach(function(s){
+    add(0.008,0.35,0.01, mDark, s*0.93,0.7,1.0);
+    add(0.008,0.35,0.01, mDark, s*0.93,0.7,0.2);
+    // Door handles
+    add(0.008,0.03,0.1, mChrome, s*0.94,0.78,0.65);
+    add(0.008,0.03,0.1, mChrome, s*0.94,0.78,0.1);
 });
 
 // Grille
 add(1.1,0.24,0.08, mDark, 0,0.62,2.52);
 add(1.05,0.2,0.09, mBlack, 0,0.62,2.52);
-for(var i=0;i<5;i++) add(1.0,0.012,0.095, mDark, 0,0.54+i*0.045,2.52);
-var emb=new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.06,0.04,16),mChrome);
-emb.rotation.x=Math.PI/2; emb.position.set(0,0.62,2.58); truck.add(emb);
+for(var i=0;i<5;i++) add(1.0,0.012,0.095, mChrome, 0,0.54+i*0.045,2.52);
+// Toyota emblem
+var emb=new THREE.Mesh(new THREE.CylinderGeometry(0.07,0.07,0.04,20),mChrome);
+emb.rotation.x=Math.PI/2; emb.position.set(0,0.63,2.59); truck.add(emb);
+var embR=new THREE.Mesh(new THREE.TorusGeometry(0.05,0.008,8,20),mChrome);
+embR.rotation.x=0; embR.position.set(0,0.63,2.61); truck.add(embR);
 
-// Bumpers
+// Front bumper
 add(1.84,0.15,0.12, mBody, 0,0.63,2.53);
-add(1.82,0.22,0.14, mDark, 0,0.38,2.53);
+add(1.82,0.22,0.16, mDark, 0,0.38,2.53);
+// Lower grille
+add(0.7,0.1,0.08, mBlack, 0,0.3,2.55);
+// Fog lights
+[-1,1].forEach(function(s){
+    add(0.16,0.1,0.06, mDark, s*0.65,0.36,2.56);
+    add(0.1,0.06,0.02, mWLed, s*0.65,0.36,2.59);
+});
 
 // Headlights
 [-1,1].forEach(function(s){
-    add(0.34,0.14,0.18, mDark, s*0.76,0.63,2.5);
-    add(0.28,0.015,0.04, mWLed, s*0.76,0.68,2.58);
-    add(0.1,0.05,0.04, mOrange, s*0.86,0.59,2.58);
+    add(0.36,0.15,0.2, mDark, s*0.76,0.63,2.5);
+    // DRL strip
+    add(0.3,0.018,0.04, mDRL, s*0.76,0.69,2.59);
+    // Main beam
+    addCyl(0.04,0.04,0.06,12, mWLed, s*0.76,0.62,2.58, Math.PI/2,0,0);
+    // Turn signal
+    add(0.1,0.05,0.04, mOrange, s*0.88,0.59,2.58);
+    // Headlight chrome bezel
+    add(0.34,0.005,0.18, mChrome, s*0.76,0.71,2.5);
 });
 
 // Bed + tailgate
 add(1.56,0.04,1.7, mBlack, 0,0.44,-1.35);
-[-1,1].forEach(function(s){ add(0.04,0.32,1.7, mBody, s*0.8,0.58,-1.35); });
+[-1,1].forEach(function(s){
+    add(0.04,0.32,1.7, mBody, s*0.8,0.58,-1.35);
+    // Bed rail caps
+    add(0.06,0.02,1.7, mChrome, s*0.8,0.75,-1.35);
+});
 add(1.56,0.34,0.04, mBody, 0,0.58,-0.52);
 add(1.56,0.32,0.05, mBody, 0,0.58,-2.18);
 add(0.24,0.03,0.02, mChrome, 0,0.62,-2.22);
 
-// Taillights
+// Taillights (more detailed)
 [-1,1].forEach(function(s){
-    add(0.18,0.16,0.07, mDark, s*0.72,0.62,-2.19);
-    add(0.14,0.06,0.03, mRed, s*0.72,0.66,-2.22);
-    add(0.14,0.03,0.03, mWLed, s*0.72,0.59,-2.22);
+    add(0.2,0.18,0.08, mDark, s*0.72,0.62,-2.19);
+    add(0.16,0.07,0.03, mRedGlow, s*0.72,0.67,-2.22);
+    add(0.16,0.04,0.03, mWLed, s*0.72,0.59,-2.22);
+    add(0.06,0.16,0.03, mOrange, s*0.82,0.62,-2.22);
 });
-add(1.82,0.12,0.1, mChrome, 0,0.28,-2.22);
 
-// Chevrons
+// Rear bumper
+add(1.82,0.12,0.12, mDark, 0,0.28,-2.22);
+add(0.5,0.08,0.02, mChrome, 0,0.3,-2.28);
+// Exhaust
+addCyl(0.03,0.035,0.1,12, mChrome, 0.55,0.2,-2.25, 0,0,Math.PI/2);
+
+// Chevrons (reflectors)
 [-1,1].forEach(function(s){
-    add(0.1,0.045,0.01, mRed, s*0.6,0.46,-2.2);
-    add(0.1,0.045,0.01, mOrange, s*0.6,0.415,-2.2);
+    add(0.12,0.05,0.01, mRed, s*0.6,0.46,-2.22);
+    add(0.12,0.05,0.01, mOrange, s*0.6,0.405,-2.22);
 });
 
 // SmartCap
 var capGrp=new THREE.Group(); capGrp.position.set(0,0,-1.35);
 add(1.66,0.05,1.74, mBody, 0,1.32,0, capGrp);
+// Front wall
 add(1.6,0.5,0.04, mBody, 0,1.04,0.85, capGrp);
+// Rear wall
 add(1.6,0.5,0.04, mBody, 0,1.04,-0.85, capGrp);
+// Rear window
 add(0.78,0.28,0.02, mGlass, 0,1.08,-0.88, capGrp);
+// Window dividers
 for(var gv=0;gv<5;gv++) add(0.008,0.26,0.008, mBlack, -0.28+gv*0.14,1.08,-0.86, capGrp);
-add(0.12,0.02,0.015, mRed, 0,1.28,-0.88, capGrp);
-[-1,1].forEach(function(s){ add(0.03,0.03,1.5, mBlack, s*0.7,1.37,0, capGrp); });
+// Third brake light
+add(0.14,0.025,0.015, mRedGlow, 0,1.28,-0.88, capGrp);
+// Roof rails
+[-1,1].forEach(function(s){
+    add(0.03,0.03,1.5, mChrome, s*0.7,1.37,0, capGrp);
+    // Rail feet
+    add(0.04,0.02,0.06, mBlack, s*0.7,1.35,-0.5, capGrp);
+    add(0.04,0.02,0.06, mBlack, s*0.7,1.35,0, capGrp);
+    add(0.04,0.02,0.06, mBlack, s*0.7,1.35,0.5, capGrp);
+});
 
+// Canopy side panels (animated)
 var pivL=new THREE.Group(); pivL.position.set(-0.82,1.3,0);
 add(0.04,0.5,1.5, mBody, 0,-0.26,0, pivL);
 add(0.02,0.46,1.46, mBlack, 0.015,-0.26,0, pivL);
+// Gas strut
+addCyl(0.005,0.005,0.3,6, mChrome, 0.01,-0.05,0.4, 0,0,0.3, pivL);
 capGrp.add(pivL);
 var pivR=new THREE.Group(); pivR.position.set(0.82,1.3,0);
 add(0.04,0.5,1.5, mBody, 0,-0.26,0, pivR);
 add(0.02,0.46,1.46, mBlack, -0.015,-0.26,0, pivR);
+addCyl(0.005,0.005,0.3,6, mChrome, -0.01,-0.05,0.4, 0,0,-0.3, pivR);
 capGrp.add(pivR);
 truck.add(capGrp);
 
-// Wheels
+// Wheels (more detailed)
 function mkW(wx,wz){
     var g=new THREE.Group();
-    g.add(new THREE.Mesh(new THREE.TorusGeometry(0.34,0.12,16,32), mTire));
-    var f=new THREE.Mesh(new THREE.CylinderGeometry(0.34,0.34,0.2,24), mTire);
-    f.rotation.z=Math.PI/2; g.add(f);
-    var d=new THREE.Mesh(new THREE.CylinderGeometry(0.24,0.24,0.14,20), mWheel);
-    d.rotation.z=Math.PI/2; g.add(d);
-    var h=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,0.03,12), mWheel);
-    h.rotation.z=Math.PI/2; h.position.x=(wx>0)?0.09:-0.09; g.add(h);
-    for(var v=0;v<8;v++){
-        var a=v*Math.PI*2/8;
-        var vh=new THREE.Mesh(new THREE.CylinderGeometry(0.03,0.03,0.03,8), mBlack);
-        vh.rotation.z=Math.PI/2;
-        vh.position.set((wx>0)?0.09:-0.09, Math.cos(a)*0.15, Math.sin(a)*0.15);
-        g.add(vh);
+    // Tire
+    var tire = new THREE.Mesh(new THREE.TorusGeometry(0.34,0.13,20,36), mTire);
+    g.add(tire);
+    // Tire sidewall fill
+    var sf = new THREE.Mesh(new THREE.CylinderGeometry(0.35,0.35,0.22,28), mTire);
+    sf.rotation.z=Math.PI/2; g.add(sf);
+    // Wheel disc
+    var disc = new THREE.Mesh(new THREE.CylinderGeometry(0.26,0.26,0.16,24), mWheel);
+    disc.rotation.z=Math.PI/2; g.add(disc);
+    // Hub cap
+    var hub = new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.08,0.04,16), mChrome);
+    hub.rotation.z=Math.PI/2;
+    hub.position.x=(wx>0)?0.1:-0.1; g.add(hub);
+    // Spokes
+    for(var v=0;v<6;v++){
+        var a=v*Math.PI*2/6;
+        var spoke = new THREE.Mesh(new THREE.BoxGeometry(0.03,0.04,0.17), mWheel);
+        spoke.position.set((wx>0)?0.09:-0.09, Math.cos(a)*0.14, Math.sin(a)*0.14);
+        spoke.rotation.x=a;
+        spoke.rotation.z=Math.PI/2;
+        g.add(spoke);
     }
+    // Lug nuts
+    for(var n=0;n<5;n++){
+        var la=n*Math.PI*2/5;
+        var lug = new THREE.Mesh(new THREE.CylinderGeometry(0.012,0.012,0.04,8), mChrome);
+        lug.rotation.z=Math.PI/2;
+        lug.position.set((wx>0)?0.11:-0.11, Math.cos(la)*0.1, Math.sin(la)*0.1);
+        g.add(lug);
+    }
+    // Brake disc (visible through spokes)
+    var brake = new THREE.Mesh(new THREE.CylinderGeometry(0.2,0.2,0.02,20), mDark);
+    brake.rotation.z=Math.PI/2; g.add(brake);
+
     g.rotation.x=Math.PI/2; g.position.set(wx,0.34,wz);
     return g;
 }
 truck.add(mkW(-0.88,1.2)); truck.add(mkW(0.88,1.2));
 truck.add(mkW(-0.88,-1.5)); truck.add(mkW(0.88,-1.5));
 
-// Arches
+// Wheel arches (thicker, more prominent)
 [-1,1].forEach(function(s){
     [1.2,-1.5].forEach(function(z){
-        var a=new THREE.Mesh(new THREE.TorusGeometry(0.4,0.04,8,16,Math.PI), mBlack);
+        var a=new THREE.Mesh(new THREE.TorusGeometry(0.42,0.05,10,20,Math.PI), mBlack);
         a.rotation.y=Math.PI/2; a.position.set(s*0.93,0.34,z); truck.add(a);
+        // Arch trim
+        var at=new THREE.Mesh(new THREE.TorusGeometry(0.44,0.015,8,20,Math.PI), mRubber);
+        at.rotation.y=Math.PI/2; at.position.set(s*0.94,0.34,z); truck.add(at);
     });
 });
 
-// Steps + mirrors
+// Side steps
 [-1,1].forEach(function(s){
-    add(0.16,0.03,1.6, mBlack, s*0.94,0.22,0.3);
-    add(0.14,0.09,0.05, mBlack, s*1.02,1.02,1.08);
-    add(0.015,0.02,0.1, mBlack, s*0.935,0.65,0.6);
-    add(0.015,0.02,0.1, mBlack, s*0.935,0.65,0.15);
+    add(0.18,0.04,1.7, mBlack, s*0.95,0.22,0.3);
+    // Step grip texture
+    add(0.14,0.005,1.65, mDark, s*0.95,0.245,0.3);
+    // Step bracket
+    add(0.04,0.06,0.1, mBlack, s*0.95,0.19,0.8);
+    add(0.04,0.06,0.1, mBlack, s*0.95,0.19,-0.2);
+});
+
+// Mirrors
+[-1,1].forEach(function(s){
+    // Mirror arm
+    add(0.12,0.03,0.04, mBlack, s*0.98,1.04,1.08);
+    // Mirror housing
+    add(0.03,0.1,0.08, mBody, s*1.04,1.02,1.08);
+    // Mirror glass
+    add(0.01,0.07,0.06, mGlass, s*1.06,1.02,1.08);
+    // Turn signal on mirror
+    add(0.01,0.015,0.04, mOrange, s*1.06,1.08,1.08);
+});
+
+// Door handle recesses
+[-1,1].forEach(function(s){
+    add(0.008,0.02,0.12, mDark, s*0.935,0.76,0.65);
+    add(0.008,0.02,0.12, mDark, s*0.935,0.76,0.1);
 });
 
 // Plates
-add(0.4,0.09,0.01, mPlate, 0,0.3,2.6);
-add(0.4,0.09,0.01, mPlate, 0,0.44,-2.23);
+add(0.42,0.1,0.01, mPlate, 0,0.3,2.6);
+add(0.42,0.1,0.01, mPlate, 0,0.44,-2.25);
 
 // Tow hook
 var hook=new THREE.Group();
 add(0.5,0.04,0.05, mBlack, 0,0,0, hook);
-var ball=new THREE.Mesh(new THREE.SphereGeometry(0.03,10,10), mChrome);
+var bBase = new THREE.Mesh(new THREE.CylinderGeometry(0.04,0.04,0.06,12), mChrome);
+bBase.position.set(0,-0.02,-0.14); hook.add(bBase);
+var ball=new THREE.Mesh(new THREE.SphereGeometry(0.035,14,14), mChrome);
 ball.position.set(0,-0.02,-0.18); hook.add(ball);
 hook.position.set(0,0.2,-2.32); hook.visible=false;
 truck.add(hook);
 
 // Antenna
-var ant=new THREE.Mesh(new THREE.ConeGeometry(0.02,0.06,6), mBlack);
-ant.position.set(0,1.34,0.3); truck.add(ant);
+var antBase=new THREE.Mesh(new THREE.CylinderGeometry(0.015,0.015,0.03,8), mBlack);
+antBase.position.set(-0.3,1.3,0.3); truck.add(antBase);
+var ant=new THREE.Mesh(new THREE.CylinderGeometry(0.004,0.008,0.25,6), mBlack);
+ant.position.set(-0.3,1.45,0.3); truck.add(ant);
 
 truck.traverse(function(c){if(c.isMesh){c.castShadow=true;c.receiveShadow=true;}});
 scene.add(truck);
 
 // ===== CAMERA ORBIT =====
 var angle = 0.7;
+var dist = 5.5;
+var camY = 1.6;
 var spinning = false, capOpen = false, capAng = 0;
 var dragging = false, mx = 0;
 
-renderer.domElement.addEventListener('pointerdown', function(e){ dragging=true; mx=e.clientX; });
-window.addEventListener('pointermove', function(e){ if(!dragging) return; angle-=(e.clientX-mx)*0.005; mx=e.clientX; });
+renderer.domElement.addEventListener('pointerdown', function(e){
+    dragging=true; mx=e.clientX;
+    document.getElementById('dragHint').style.opacity='0';
+});
+window.addEventListener('pointermove', function(e){
+    if(!dragging) return;
+    angle -= (e.clientX-mx)*0.005;
+    mx=e.clientX;
+});
 window.addEventListener('pointerup', function(){ dragging=false; });
 renderer.domElement.addEventListener('wheel', function(e){
     e.preventDefault();
-    camera.position.y = Math.max(0.5, Math.min(4, camera.position.y + e.deltaY*0.003));
+    dist = Math.max(3.5, Math.min(10, dist + e.deltaY*0.005));
 }, {passive:false});
 
 window.addEventListener('resize', function(){
@@ -405,13 +572,15 @@ document.getElementById('btnHook').addEventListener('click', function(){
 
 function animate(){
     requestAnimationFrame(animate);
-    if(spinning) angle+=0.004;
+    if(spinning) angle+=0.003;
+
     var tgt=capOpen?-1.1:0;
-    capAng+=(tgt-capAng)*0.08;
+    capAng+=(tgt-capAng)*0.06;
     pivL.rotation.z=capAng;
     pivR.rotation.z=-capAng;
-    camera.position.set(5*Math.sin(angle), 2, 5*Math.cos(angle));
-    camera.lookAt(0, 0.5, 0);
+
+    camera.position.set(dist*Math.sin(angle), camY, dist*Math.cos(angle));
+    camera.lookAt(0, 0.55, 0);
     renderer.render(scene,camera);
 }
 animate();
