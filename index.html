@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SmartCap Israel - Toyota Hilux SmartCap</title>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:'Heebo',sans-serif;background:#0a0a0a;color:#fff}
+
+/* ===== HERO ===== */
+.hero{
+    min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;
+    position:relative;overflow:hidden;
+    background:linear-gradient(160deg,#0a0a0a 0%,#141428 40%,#1a1a2e 70%,#0a0a0a 100%);
+}
+.hero::before{
+    content:'';position:absolute;inset:0;
+    background:radial-gradient(ellipse at 50% 80%,rgba(200,0,0,0.08) 0%,transparent 60%);
+}
+.hero-content{position:relative;z-index:2;padding:0 20px}
+.hero-badge{
+    display:inline-block;padding:6px 20px;border:1px solid rgba(255,255,255,0.15);border-radius:30px;
+    font-size:12px;font-weight:500;letter-spacing:3px;color:rgba(255,255,255,0.5);margin-bottom:24px;
+    text-transform:uppercase;
+}
+.hero h1{font-size:clamp(40px,8vw,80px);font-weight:900;line-height:1.05;margin-bottom:12px}
+.hero h1 span{color:#c00;display:inline}
+.hero .sub{font-size:clamp(16px,2.5vw,22px);font-weight:300;color:rgba(255,255,255,0.45);margin-bottom:40px;line-height:1.5}
+.hero-stats{display:flex;gap:40px;justify-content:center;margin-bottom:50px;flex-wrap:wrap}
+.hero-stat{text-align:center}
+.hero-stat .val{font-size:32px;font-weight:800}
+.hero-stat .lbl{font-size:11px;color:rgba(255,255,255,0.35);letter-spacing:1px;margin-top:2px}
+.scroll-btn{
+    display:inline-flex;align-items:center;gap:10px;padding:14px 32px;
+    background:linear-gradient(135deg,#c00,#900);border:none;border-radius:30px;
+    color:#fff;font-family:'Heebo',sans-serif;font-size:15px;font-weight:600;cursor:pointer;
+    transition:transform 0.3s,box-shadow 0.3s;text-decoration:none;
+}
+.scroll-btn:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(200,0,0,0.3)}
+.scroll-arrow{
+    position:absolute;bottom:30px;left:50%;transform:translateX(-50%);
+    width:24px;height:24px;border-left:2px solid rgba(255,255,255,0.3);border-bottom:2px solid rgba(255,255,255,0.3);
+    transform:translateX(-50%) rotate(-45deg);animation:bounce 2s infinite;
+}
+@keyframes bounce{0%,100%{bottom:30px;opacity:0.3}50%{bottom:20px;opacity:0.8}}
+
+/* ===== 3D SECTION ===== */
+.viewer-section{
+    position:relative;padding:60px 0 0;
+    background:linear-gradient(180deg,#0a0a0a 0%,#111122 50%,#0a0a0a 100%);
+}
+.section-header{text-align:center;padding:0 20px 30px}
+.section-header h2{font-size:clamp(24px,4vw,38px);font-weight:800;margin-bottom:8px}
+.section-header p{font-size:15px;color:rgba(255,255,255,0.4);font-weight:300}
+.viewer-wrap{
+    position:relative;width:100%;max-width:1200px;margin:0 auto;
+    height:70vh;min-height:450px;max-height:700px;
+    border-radius:16px;overflow:hidden;
+    border:1px solid rgba(255,255,255,0.06);
+    background:#111122;
+}
+.viewer-wrap canvas{display:block;cursor:grab}
+.viewer-wrap canvas:active{cursor:grabbing}
+.viewer-controls{
+    position:absolute;bottom:16px;left:50%;transform:translateX(-50%);
+    display:flex;gap:8px;z-index:10;
+}
+.vbtn{
+    background:rgba(0,0,0,0.5);backdrop-filter:blur(10px);
+    border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.7);
+    padding:8px 18px;border-radius:20px;cursor:pointer;font-family:'Heebo',sans-serif;
+    font-size:12px;font-weight:500;transition:all 0.3s;
+}
+.vbtn:hover{background:rgba(255,255,255,0.1);color:#fff}
+.vbtn.on{background:rgba(200,0,0,0.25);border-color:rgba(200,0,0,0.4);color:#f77}
+.drag-hint{
+    position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+    font-size:14px;color:rgba(255,255,255,0.25);pointer-events:none;
+    transition:opacity 0.5s;z-index:5;
+}
+
+/* ===== FEATURES ===== */
+.features{padding:80px 20px;max-width:1000px;margin:0 auto}
+.features h2{text-align:center;font-size:28px;font-weight:800;margin-bottom:40px}
+.feat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:24px}
+.feat-card{
+    background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);
+    border-radius:12px;padding:24px;transition:transform 0.3s;
+}
+.feat-card:hover{transform:translateY(-4px)}
+.feat-card .icon{font-size:28px;margin-bottom:12px}
+.feat-card h3{font-size:16px;font-weight:700;margin-bottom:6px}
+.feat-card p{font-size:13px;color:rgba(255,255,255,0.4);line-height:1.6}
+
+/* ===== FOOTER ===== */
+.footer{text-align:center;padding:40px 20px;border-top:1px solid rgba(255,255,255,0.05);font-size:12px;color:rgba(255,255,255,0.2)}
+
+@media(max-width:600px){
+    .hero-stats{gap:20px}
+    .hero-stat .val{font-size:24px}
+    .viewer-wrap{height:50vh;min-height:350px;border-radius:0}
+}
+</style>
+</head>
+<body>
+
+<!-- ===== HERO ===== -->
+<section class="hero">
+    <div class="hero-content">
+        <div class="hero-badge">SmartCap Israel</div>
+        <h1>Toyota Hilux<br><span>SmartCap</span> Edition</h1>
+        <p class="sub">קנופי SmartCap מתקדם לטויוטה הילוקס · פאנלים נפתחים · עמיד בתנאי שטח</p>
+        <div class="hero-stats">
+            <div class="hero-stat"><div class="val">2.4L</div><div class="lbl">טורבו דיזל</div></div>
+            <div class="hero-stat"><div class="val">150</div><div class="lbl">כוח סוס</div></div>
+            <div class="hero-stat"><div class="val">4×4</div><div class="lbl">הנעה כפולה</div></div>
+            <div class="hero-stat"><div class="val">3,500</div><div class="lbl">ק"ג גרירה</div></div>
+        </div>
+        <a href="#viewer" class="scroll-btn">צפה בהדמיה תלת מימדית ↓</a>
+    </div>
+    <div class="scroll-arrow"></div>
+</section>
+
+<!-- ===== 3D VIEWER ===== -->
+<section class="viewer-section" id="viewer">
+    <div class="section-header">
+        <h2>הדמיה תלת מימדית אינטראקטיבית</h2>
+        <p>גרור ימינה ושמאלה לסיבוב סביב הרכב · גלגלת לזום</p>
+    </div>
+    <div class="viewer-wrap" id="viewer3d">
+        <div class="drag-hint" id="dragHint">← גרור ימינה ושמאלה לסיבוב →</div>
+        <div class="viewer-controls">
+            <button class="vbtn" id="btnSpin">סיבוב אוטומטי</button>
+            <button class="vbtn" id="btnCap">פתח קנופי</button>
+            <button class="vbtn" id="btnHook">וו גרירה</button>
+        </div>
+    </div>
+</section>
+
+<!-- ===== FEATURES ===== -->
+<section class="features">
+    <h2>יתרונות SmartCap</h2>
+    <div class="feat-grid">
+        <div class="feat-card">
+            <div class="icon">🔒</div>
+            <h3>נעילה מאובטחת</h3>
+            <p>פאנלים צדדיים עם מנעול מרכזי ובולמי גז לפתיחה חלקה</p>
+        </div>
+        <div class="feat-card">
+            <div class="icon">💪</div>
+            <h3>עמידות גבוהה</h3>
+            <p>מיוצר מחומרים קשיחים העמידים בתנאי מזג אוויר קשים ושטח</p>
+        </div>
+        <div class="feat-card">
+            <div class="icon">📐</div>
+            <h3>התאמה מושלמת</h3>
+            <p>מותאם במדויק לארגז של טויוטה הילוקס - התקנה מהירה ופשוטה</p>
+        </div>
+        <div class="feat-card">
+            <div class="icon">🏔️</div>
+            <h3>מסילות גג</h3>
+            <p>מסילות גג מובנות לנשיאת ציוד נוסף - אופניים, סולם, ארגזים</p>
+        </div>
+    </div>
+</section>
+
+<footer class="footer">© 2024 SmartCap Israel · כל הזכויות שמורות</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
+<script>
+window.addEventListener('load', function(){
+
+var container = document.getElementById('viewer3d');
+var W = container.clientWidth;
+var H = container.clientHeight;
+
+document.title = 'DEBUG: W=' + W + ' H=' + H;
+
+var scene = new THREE.Scene();
+scene.background = new THREE.Color(0x111122);
+
+var camera = new THREE.PerspectiveCamera(40, W / H, 0.1, 100);
+camera.position.set(5, 2, 5);
+camera.lookAt(0, 0, 0);
+
+var renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(W, H);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.4;
+container.insertBefore(renderer.domElement, container.firstChild);
+
+// Lights
+scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+var sun = new THREE.DirectionalLight(0xffffff, 2);
+sun.position.set(5, 10, 5);
+scene.add(sun);
+
+// Ground
+var ground = new THREE.Mesh(
+    new THREE.PlaneGeometry(30, 30),
+    new THREE.MeshStandardMaterial({color: 0x1a1a2e, roughness: 0.8})
+);
+ground.rotation.x = -Math.PI / 2;
+ground.receiveShadow = true;
+scene.add(ground);
+
+// Grid
+var grid = new THREE.GridHelper(30, 30, 0x333366, 0x222244);
+grid.position.y = 0.01;
+scene.add(grid);
+
+// Extra lights
+var fl1 = new THREE.DirectionalLight(0x8888ff, 0.5);
+fl1.position.set(-5, 5, -5); scene.add(fl1);
+var fl2 = new THREE.DirectionalLight(0xffffff, 0.4);
+fl2.position.set(0, 4, -8); scene.add(fl2);
+
+// Materials
+var mBody = new THREE.MeshStandardMaterial({color:0xeeeee8, roughness:0.35, metalness:0.15});
+var mBlack = new THREE.MeshStandardMaterial({color:0x111111, roughness:0.9});
+var mDark = new THREE.MeshStandardMaterial({color:0x222222, roughness:0.5, metalness:0.3});
+var mChrome = new THREE.MeshStandardMaterial({color:0xaaaaaa, roughness:0.1, metalness:0.9});
+var mGlass = new THREE.MeshStandardMaterial({color:0x334455, roughness:0.05, transparent:true, opacity:0.4});
+var mTire = new THREE.MeshStandardMaterial({color:0x0a0a0a, roughness:1.0, metalness:0.0});
+var mWheel = new THREE.MeshStandardMaterial({color:0x1a1a1a, roughness:0.4, metalness:0.6});
+var mRed = new THREE.MeshStandardMaterial({color:0xdd2222, emissive:0x551111, roughness:0.3});
+var mOrange = new THREE.MeshStandardMaterial({color:0xff6600, emissive:0x442200, roughness:0.4});
+var mWLed = new THREE.MeshStandardMaterial({color:0xffffff, emissive:0x999999, roughness:0.2});
+var mPlate = new THREE.MeshStandardMaterial({color:0xddcc33, roughness:0.6});
+
+// ===== TRUCK =====
+var truck = new THREE.Group();
+
+function add(w,h,d,mat,x,y,z,parent){
+    var m = new THREE.Mesh(new THREE.BoxGeometry(w,h,d), mat);
+    m.position.set(x,y,z); m.castShadow=true;
+    (parent||truck).add(m);
+    return m;
+}
+
+// Body
+add(1.85,0.42,5.1, mBody, 0,0.5,0);
+add(1.7,0.55,1.7, mBody, 0,0.99,0.6);
+add(1.72,0.06,1.72, mBody, 0,1.29,0.6);
+var hd=add(1.76,0.06,1.5, mBody, 0,0.75,1.85); hd.rotation.x=0.04;
+var wsh=add(1.58,0.55,0.04, mGlass, 0,0.99,1.33); wsh.rotation.x=-0.3;
+add(1.45,0.4,0.04, mGlass, 0,0.99,-0.22);
+[-1,1].forEach(function(s){
+    add(0.04,0.33,0.7, mGlass, s*0.86,1.0,0.75);
+    add(0.04,0.3,0.5, mGlass, s*0.86,1.0,0.25);
+    add(0.05,0.42,0.06, mBody, s*0.86,0.98,0.47);
+});
+
+// Grille
+add(1.1,0.24,0.08, mDark, 0,0.62,2.52);
+add(1.05,0.2,0.09, mBlack, 0,0.62,2.52);
+for(var i=0;i<5;i++) add(1.0,0.012,0.095, mDark, 0,0.54+i*0.045,2.52);
+var emb=new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.06,0.04,16),mChrome);
+emb.rotation.x=Math.PI/2; emb.position.set(0,0.62,2.58); truck.add(emb);
+
+// Bumpers
+add(1.84,0.15,0.12, mBody, 0,0.63,2.53);
+add(1.82,0.22,0.14, mDark, 0,0.38,2.53);
+
+// Headlights
+[-1,1].forEach(function(s){
+    add(0.34,0.14,0.18, mDark, s*0.76,0.63,2.5);
+    add(0.28,0.015,0.04, mWLed, s*0.76,0.68,2.58);
+    add(0.1,0.05,0.04, mOrange, s*0.86,0.59,2.58);
+});
+
+// Bed + tailgate
+add(1.56,0.04,1.7, mBlack, 0,0.44,-1.35);
+[-1,1].forEach(function(s){ add(0.04,0.32,1.7, mBody, s*0.8,0.58,-1.35); });
+add(1.56,0.34,0.04, mBody, 0,0.58,-0.52);
+add(1.56,0.32,0.05, mBody, 0,0.58,-2.18);
+add(0.24,0.03,0.02, mChrome, 0,0.62,-2.22);
+
+// Taillights
+[-1,1].forEach(function(s){
+    add(0.18,0.16,0.07, mDark, s*0.72,0.62,-2.19);
+    add(0.14,0.06,0.03, mRed, s*0.72,0.66,-2.22);
+    add(0.14,0.03,0.03, mWLed, s*0.72,0.59,-2.22);
+});
+add(1.82,0.12,0.1, mChrome, 0,0.28,-2.22);
+
+// Chevrons
+[-1,1].forEach(function(s){
+    add(0.1,0.045,0.01, mRed, s*0.6,0.46,-2.2);
+    add(0.1,0.045,0.01, mOrange, s*0.6,0.415,-2.2);
+});
+
+// SmartCap
+var capGrp=new THREE.Group(); capGrp.position.set(0,0,-1.35);
+add(1.66,0.05,1.74, mBody, 0,1.32,0, capGrp);
+add(1.6,0.5,0.04, mBody, 0,1.04,0.85, capGrp);
+add(1.6,0.5,0.04, mBody, 0,1.04,-0.85, capGrp);
+add(0.78,0.28,0.02, mGlass, 0,1.08,-0.88, capGrp);
+for(var gv=0;gv<5;gv++) add(0.008,0.26,0.008, mBlack, -0.28+gv*0.14,1.08,-0.86, capGrp);
+add(0.12,0.02,0.015, mRed, 0,1.28,-0.88, capGrp);
+[-1,1].forEach(function(s){ add(0.03,0.03,1.5, mBlack, s*0.7,1.37,0, capGrp); });
+
+var pivL=new THREE.Group(); pivL.position.set(-0.82,1.3,0);
+add(0.04,0.5,1.5, mBody, 0,-0.26,0, pivL);
+add(0.02,0.46,1.46, mBlack, 0.015,-0.26,0, pivL);
+capGrp.add(pivL);
+var pivR=new THREE.Group(); pivR.position.set(0.82,1.3,0);
+add(0.04,0.5,1.5, mBody, 0,-0.26,0, pivR);
+add(0.02,0.46,1.46, mBlack, -0.015,-0.26,0, pivR);
+capGrp.add(pivR);
+truck.add(capGrp);
+
+// Wheels
+function mkW(wx,wz){
+    var g=new THREE.Group();
+    g.add(new THREE.Mesh(new THREE.TorusGeometry(0.34,0.12,16,32), mTire));
+    var f=new THREE.Mesh(new THREE.CylinderGeometry(0.34,0.34,0.2,24), mTire);
+    f.rotation.z=Math.PI/2; g.add(f);
+    var d=new THREE.Mesh(new THREE.CylinderGeometry(0.24,0.24,0.14,20), mWheel);
+    d.rotation.z=Math.PI/2; g.add(d);
+    var h=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,0.03,12), mWheel);
+    h.rotation.z=Math.PI/2; h.position.x=(wx>0)?0.09:-0.09; g.add(h);
+    for(var v=0;v<8;v++){
+        var a=v*Math.PI*2/8;
+        var vh=new THREE.Mesh(new THREE.CylinderGeometry(0.03,0.03,0.03,8), mBlack);
+        vh.rotation.z=Math.PI/2;
+        vh.position.set((wx>0)?0.09:-0.09, Math.cos(a)*0.15, Math.sin(a)*0.15);
+        g.add(vh);
+    }
+    g.rotation.x=Math.PI/2; g.position.set(wx,0.34,wz);
+    return g;
+}
+truck.add(mkW(-0.88,1.2)); truck.add(mkW(0.88,1.2));
+truck.add(mkW(-0.88,-1.5)); truck.add(mkW(0.88,-1.5));
+
+// Arches
+[-1,1].forEach(function(s){
+    [1.2,-1.5].forEach(function(z){
+        var a=new THREE.Mesh(new THREE.TorusGeometry(0.4,0.04,8,16,Math.PI), mBlack);
+        a.rotation.y=Math.PI/2; a.position.set(s*0.93,0.34,z); truck.add(a);
+    });
+});
+
+// Steps + mirrors
+[-1,1].forEach(function(s){
+    add(0.16,0.03,1.6, mBlack, s*0.94,0.22,0.3);
+    add(0.14,0.09,0.05, mBlack, s*1.02,1.02,1.08);
+    add(0.015,0.02,0.1, mBlack, s*0.935,0.65,0.6);
+    add(0.015,0.02,0.1, mBlack, s*0.935,0.65,0.15);
+});
+
+// Plates
+add(0.4,0.09,0.01, mPlate, 0,0.3,2.6);
+add(0.4,0.09,0.01, mPlate, 0,0.44,-2.23);
+
+// Tow hook
+var hook=new THREE.Group();
+add(0.5,0.04,0.05, mBlack, 0,0,0, hook);
+var ball=new THREE.Mesh(new THREE.SphereGeometry(0.03,10,10), mChrome);
+ball.position.set(0,-0.02,-0.18); hook.add(ball);
+hook.position.set(0,0.2,-2.32); hook.visible=false;
+truck.add(hook);
+
+// Antenna
+var ant=new THREE.Mesh(new THREE.ConeGeometry(0.02,0.06,6), mBlack);
+ant.position.set(0,1.34,0.3); truck.add(ant);
+
+truck.traverse(function(c){if(c.isMesh){c.castShadow=true;c.receiveShadow=true;}});
+scene.add(truck);
+
+// ===== CAMERA ORBIT =====
+var angle = 0.7;
+var spinning = false, capOpen = false, capAng = 0;
+var dragging = false, mx = 0;
+
+renderer.domElement.addEventListener('pointerdown', function(e){ dragging=true; mx=e.clientX; });
+window.addEventListener('pointermove', function(e){ if(!dragging) return; angle-=(e.clientX-mx)*0.005; mx=e.clientX; });
+window.addEventListener('pointerup', function(){ dragging=false; });
+renderer.domElement.addEventListener('wheel', function(e){
+    e.preventDefault();
+    camera.position.y = Math.max(0.5, Math.min(4, camera.position.y + e.deltaY*0.003));
+}, {passive:false});
+
+window.addEventListener('resize', function(){
+    W=container.clientWidth; H=container.clientHeight;
+    camera.aspect=W/H; camera.updateProjectionMatrix();
+    renderer.setSize(W,H);
+});
+
+document.getElementById('btnSpin').addEventListener('click', function(){
+    spinning=!spinning; this.classList.toggle('on');
+});
+document.getElementById('btnCap').addEventListener('click', function(){
+    capOpen=!capOpen; this.classList.toggle('on');
+    this.textContent = capOpen ? 'סגור קנופי' : 'פתח קנופי';
+});
+document.getElementById('btnHook').addEventListener('click', function(){
+    hook.visible=!hook.visible; this.classList.toggle('on');
+});
+
+function animate(){
+    requestAnimationFrame(animate);
+    if(spinning) angle+=0.004;
+    var tgt=capOpen?-1.1:0;
+    capAng+=(tgt-capAng)*0.08;
+    pivL.rotation.z=capAng;
+    pivR.rotation.z=-capAng;
+    camera.position.set(5*Math.sin(angle), 2, 5*Math.cos(angle));
+    camera.lookAt(0, 0.5, 0);
+    renderer.render(scene,camera);
+}
+animate();
+
+});
+</script>
+</body>
+</html>
